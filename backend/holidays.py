@@ -1,30 +1,66 @@
-"""Detect upcoming long weekends from the Indian holiday calendar."""
-import json
-from datetime import date, datetime, timedelta
-from pathlib import Path
+"""Detect upcoming long weekends from Indian holidays.
 
-HOLIDAYS_FILE = Path(__file__).resolve().parent.parent / "data" / "holidays.json"
+Uses the `holidays` library for algorithmic generation — no static JSON,
+no annual manual updates. Lunar/Islamic holidays are marked '(estimated)'
+by the library; we surface that as the 'approximate' flag.
+"""
+import re
+from datetime import date, timedelta
+import holidays as _holidays
+
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
+_ESTIMATED_RE = re.compile(r"\s*\(estimated\)\s*$", re.IGNORECASE)
 
-def _load_holidays() -> list[dict]:
-    with open(HOLIDAYS_FILE, encoding="utf-8") as f:
-        return json.load(f)
+
+def _classify(name: str) -> str:
+    n = name.lower()
+    if any(k in n for k in ["republic day", "independence day", "gandhi", "labour", "new year"]):
+        return "national"
+    if any(k in n for k in ["christmas", "good friday", "easter"]):
+        return "religious"
+    if any(k in n for k in ["diwali", "holi", "dussehra", "janmashtami", "ganesh", "shivaratri",
+                              "ram navami", "mahavir", "guru nanak", "buddha", "onam", "pongal",
+                              "rath yatra", "navaratri", "raksha"]):
+        return "religious"
+    if any(k in n for k in ["eid", "bakrid", "id-ul", "muharram", "milad", "ramzan"]):
+        return "religious"
+    return "regional"
+
+
+def _build_holidays_for_range(start: date, end: date) -> list[dict]:
+    years = list(range(start.year, end.year + 2))
+    ind = _holidays.country_holidays("IN", years=years)
+    out = []
+    for d, name in ind.items():
+        if d < start or d > end:
+            continue
+        approximate = bool(_ESTIMATED_RE.search(name))
+        clean_name = _ESTIMATED_RE.sub("", name).strip()
+        out.append({
+            "date": d.isoformat(),
+            "name": clean_name,
+            "type": _classify(clean_name),
+            "approximate": approximate,
+        })
+    out.sort(key=lambda x: x["date"])
+    return out
 
 
 def _parse(d: str) -> date:
-    return datetime.strptime(d, "%Y-%m-%d").date()
+    from datetime import datetime as _dt
+    return _dt.strptime(d, "%Y-%m-%d").date()
 
 
 def find_long_weekends(today: date | None = None, lookahead_days: int = 400) -> list[dict]:
     today = today or date.today()
-    holidays = _load_holidays()
-    holiday_map = {_parse(h["date"]): h for h in holidays}
+    end = today + timedelta(days=lookahead_days)
+    holidays_list = _build_holidays_for_range(today, end + timedelta(days=7))
+    holiday_map = {_parse(h["date"]): h for h in holidays_list}
 
     def is_off(d: date) -> bool:
         return d.weekday() in (5, 6) or d in holiday_map
 
-    end = today + timedelta(days=lookahead_days)
     seen: set[date] = set()
     results = []
     d = today
@@ -32,9 +68,8 @@ def find_long_weekends(today: date | None = None, lookahead_days: int = 400) -> 
         if d in seen or not is_off(d):
             d += timedelta(days=1)
             continue
-        # Find full off-day stretch around d
         start = d
-        while is_off(start - timedelta(days=1)):
+        while is_off(start - timedelta(days=1)) and start > today - timedelta(days=7):
             start -= timedelta(days=1)
         stop = d
         while is_off(stop + timedelta(days=1)):
@@ -49,10 +84,7 @@ def find_long_weekends(today: date | None = None, lookahead_days: int = 400) -> 
             seen.add(cur)
             cur += timedelta(days=1)
 
-        # Only include if length >= 3 days AND at least one holiday (not pure Sat/Sun)
-        # AND stretch contains today or later
         if length >= 3 and stretch_holidays and stop >= today:
-            # Skip weekends with no real long-weekend value (e.g., past)
             results.append({
                 "start": start.isoformat(),
                 "end": stop.isoformat(),
