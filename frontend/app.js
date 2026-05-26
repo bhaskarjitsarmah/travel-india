@@ -39,6 +39,82 @@ document.querySelectorAll(".tab").forEach(t => {
   });
 });
 
+// ---------- Long weekends ----------
+async function loadLongWeekends() {
+  const list = document.getElementById("longWeekendsList");
+  try {
+    const exclude = [...state.visitedIds].join(",");
+    const r = await fetch(`/api/long-weekends?limit=6&exclude_ids=${encodeURIComponent(exclude)}`);
+    const d = await r.json();
+    list.innerHTML = "";
+    if (!d.long_weekends.length) {
+      list.innerHTML = `<div class="empty">No upcoming long weekends found.</div>`;
+      return;
+    }
+    d.long_weekends.forEach(w => list.appendChild(renderLongWeekendCard(w)));
+  } catch (e) {
+    list.innerHTML = `<div class="empty">Couldn't load calendar: ${e.message}</div>`;
+  }
+}
+
+function renderLongWeekendCard(w) {
+  const startDate = new Date(w.start);
+  const endDate = new Date(w.end);
+  const opts = { month: "short", day: "numeric" };
+  const startStr = startDate.toLocaleDateString("en-IN", opts);
+  const endStr = endDate.toLocaleDateString("en-IN", opts);
+  const sameYear = startDate.getFullYear() === endDate.getFullYear();
+  const yearStr = sameYear ? startDate.getFullYear() : `${startDate.getFullYear()}–${endDate.getFullYear()}`;
+
+  const holidayNames = w.holidays.map(h => {
+    const approx = h.approximate ? ` <span class="lw-approx" title="approximate date">~</span>` : "";
+    return `<span class="lw-holiday">${h.name}${approx}</span>`;
+  }).join(" + ");
+
+  const recs = (w.recommendations || []).map((p, i) => {
+    const img = p.thumb_url || p.image_url;
+    const photo = img
+      ? `<div class="lw-rec-photo" style="background-image:url('${img}')"></div>`
+      : `<div class="lw-rec-photo placeholder"></div>`;
+    const seasonBadge = p.season_match >= 0.99 ? `<span class="lw-season-badge ideal">peak season</span>`
+                       : p.season_match >= 0.5 ? `<span class="lw-season-badge ok">shoulder</span>`
+                       : `<span class="lw-season-badge off">off-season</span>`;
+    return `
+      <div class="lw-rec" data-id="${p.id}">
+        ${photo}
+        <div class="lw-rec-body">
+          <div class="lw-rec-name">${p.name}</div>
+          <div class="lw-rec-meta">${p.state} · ${p.duration_days}d trip · ${(p.type||[]).slice(0,2).join(", ")}</div>
+          ${seasonBadge}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const card = document.createElement("div");
+  card.className = "lw-card";
+  card.innerHTML = `
+    <div class="lw-date-block">
+      <div class="lw-days">${w.days}-day</div>
+      <div class="lw-range">${startStr} – ${endStr}</div>
+      <div class="lw-dow">${w.start_day} → ${w.end_day}</div>
+      <div class="lw-year">${yearStr}</div>
+    </div>
+    <div class="lw-content">
+      <div class="lw-holidays">${holidayNames}</div>
+      <div class="lw-recs-label">Top picks for this weekend</div>
+      <div class="lw-recs">${recs}</div>
+    </div>
+  `;
+  card.querySelectorAll(".lw-rec").forEach(el => {
+    el.addEventListener("click", () => {
+      const place = state.placesById[el.dataset.id];
+      if (place) openDetailsModal(place);
+    });
+  });
+  return card;
+}
+
 // ---------- Init ----------
 async function init() {
   const monthSelect = document.getElementById("monthSelect");
@@ -51,6 +127,7 @@ async function init() {
   monthSelect.value = state.currentMonth;
 
   await loadPlaces();
+  loadLongWeekends();
   await loadRecommendations();
 }
 

@@ -940,6 +940,200 @@ button.primary {
   margin-top: 8px;
 }
 
+/* Long weekends */
+.long-weekends-block {
+  margin-bottom: 24px;
+}
+
+.lw-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.lw-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.lw-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 14px;
+}
+
+.lw-card {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.lw-date-block {
+  background: linear-gradient(135deg, rgba(255,122,69,0.15), rgba(108,92,231,0.15));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.lw-days {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.lw-range {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.lw-dow {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lw-year {
+  font-size: 11px;
+  color: var(--accent-2);
+}
+
+.lw-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lw-holidays {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.lw-holiday {
+  color: var(--accent-2);
+}
+
+.lw-approx {
+  color: var(--warn);
+  font-weight: bold;
+  cursor: help;
+}
+
+.lw-recs-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.lw-recs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.lw-rec {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  min-width: 0;
+}
+
+.lw-rec:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.lw-rec-photo {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--panel);
+}
+
+.lw-rec-photo.placeholder {
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+}
+
+.lw-rec-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.lw-rec-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lw-rec-meta {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  margin-bottom: 2px;
+}
+
+.lw-season-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.lw-season-badge.ideal {
+  background: rgba(92, 214, 163, 0.2);
+  color: var(--good);
+}
+
+.lw-season-badge.ok {
+  background: rgba(255, 215, 110, 0.2);
+  color: var(--warn);
+}
+
+.lw-season-badge.off {
+  background: rgba(255, 122, 138, 0.15);
+  color: var(--bad);
+}
+
+@media (max-width: 600px) {
+  .lw-card { grid-template-columns: 1fr; }
+  .lw-recs { grid-template-columns: 1fr; }
+}
+
 /* Details modal */
 .modal {
   position: fixed;

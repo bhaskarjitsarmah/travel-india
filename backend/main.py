@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from . import db, ranking, weather, nl_search, photos, stats, itinerary, details
+from . import db, ranking, weather, nl_search, photos, stats, itinerary, details, holidays
 
 load_dotenv()
 
@@ -248,6 +248,40 @@ async def search(body: SearchQuery):
         "weather_used": bool(weather_lookup),
         "results": ranked[:top_n],
     }
+
+
+@app.get("/api/long-weekends")
+def long_weekends(limit: int = 6, places_per_weekend: int = 4, exclude_ids: str = ""):
+    exclude = set(filter(None, exclude_ids.split(",")))
+    weekends = holidays.upcoming_long_weekends(limit=limit)
+    all_p = all_places()
+
+    for w in weekends:
+        # Rank places using the month the long weekend falls in.
+        # Bias toward shorter trips by keeping only the top N accessible places.
+        ranked = ranking.rank_places(all_p, exclude, month=w["months"][0])
+        # Prefer accessibility >= 3 for short getaways
+        top = [p for p in ranked if p.get("accessibility", 0) >= 3][:places_per_weekend]
+        w["recommendations"] = [
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "state": p["state"],
+                "region": p["region"],
+                "type": p.get("type", []),
+                "thumb_url": p.get("thumb_url"),
+                "image_url": p.get("image_url"),
+                "lat": p["lat"], "lon": p["lon"],
+                "duration_days": p.get("duration_days", 2),
+                "description": p.get("description", ""),
+                "accessibility": p.get("accessibility"),
+                "must_see_score": p.get("must_see_score"),
+                "score": p["scoring"]["score"],
+                "season_match": p["scoring"]["season"],
+            }
+            for p in top
+        ]
+    return {"count": len(weekends), "long_weekends": weekends}
 
 
 @app.get("/api/details/{place_id}")
