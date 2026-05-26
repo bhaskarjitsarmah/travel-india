@@ -29,6 +29,11 @@ def init_db():
                 source TEXT,
                 fetched_at TEXT DEFAULT (datetime('now'))
             );
+            CREATE TABLE IF NOT EXISTS place_details (
+                place_id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                fetched_at TEXT DEFAULT (datetime('now'))
+            );
             """
         )
 
@@ -112,4 +117,23 @@ def cache_photo(place_id: str, image_url: str | None, thumb_url: str | None, sou
             """INSERT OR REPLACE INTO photos (place_id, image_url, thumb_url, source, fetched_at)
                VALUES (?, ?, ?, ?, datetime('now'))""",
             (place_id, image_url, thumb_url, source),
+        )
+
+
+def get_cached_details(place_id: str) -> dict | None:
+    import json as _json
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT content FROM place_details WHERE place_id = ?", (place_id,)
+        ).fetchone()
+        return _json.loads(row["content"]) if row else None
+
+
+def cache_details(place_id: str, content: dict):
+    import json as _json
+    with connect() as conn:
+        conn.execute(
+            """INSERT OR REPLACE INTO place_details (place_id, content, fetched_at)
+               VALUES (?, ?, datetime('now'))""",
+            (place_id, _json.dumps(content)),
         )

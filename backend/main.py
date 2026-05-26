@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from . import db, ranking, weather, nl_search, photos, stats, itinerary
+from . import db, ranking, weather, nl_search, photos, stats, itinerary, details
 
 load_dotenv()
 
@@ -248,6 +248,18 @@ async def search(body: SearchQuery):
         "weather_used": bool(weather_lookup),
         "results": ranked[:top_n],
     }
+
+
+@app.get("/api/details/{place_id}")
+async def place_details(place_id: str):
+    places = all_places()
+    place = next((p for p in places if p["id"] == place_id), None)
+    if not place:
+        raise HTTPException(404, "Place not found")
+    d = await details.fetch_details(place)
+    if not d:
+        raise HTTPException(503, "Could not generate details (LLM unavailable)")
+    return d
 
 
 @app.get("/api/weather/{place_id}")

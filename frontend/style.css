@@ -939,3 +939,189 @@ button.primary {
   border-top: 1px dashed var(--border);
   margin-top: 8px;
 }
+
+/* Details modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden { display: none; }
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 880px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.modal-close:hover {
+  background: var(--bad);
+  border-color: var(--bad);
+}
+
+.modal-photo {
+  height: 260px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--panel-2);
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-photo.placeholder {
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+}
+
+.modal-head {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.modal-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.modal-desc {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 10px 0 0;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 20px 24px;
+}
+
+.detail-section {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--accent-2);
+}
+
+.detail-section.dos h3 { color: var(--good); }
+.detail-section.donts h3 { color: var(--bad); }
+.detail-section.must-do h3 { color: var(--accent); }
+.detail-section.facts h3 { color: var(--visited); }
+.detail-section.food h3 { color: var(--warn); }
+.detail-section.info { grid-column: 1 / -1; }
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: none;
+}
+
+.detail-section li {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  position: relative;
+  padding-left: 12px;
+}
+
+.detail-section li::before {
+  content: "→";
+  position: absolute;
+  left: -8px;
+  color: var(--muted);
+}
+
+.detail-section.dos li::before { content: "✓"; color: var(--good); }
+.detail-section.donts li::before { content: "✗"; color: var(--bad); }
+.detail-section.must-do li::before { content: "★"; color: var(--accent); }
+
+.detail-section.info p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 6px 0;
+}
+
+.detail-section.info b { color: var(--text); margin-right: 6px; }
+
+.modal-actions {
+  padding: 0 24px 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.modal-actions button {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-actions button:hover {
+  background: var(--accent);
+  color: #1a1410;
+}
+
+.details-btn {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+@media (max-width: 700px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .modal-panel { width: 96%; max-height: 95vh; }
+  .modal-photo { height: 180px; }
+}

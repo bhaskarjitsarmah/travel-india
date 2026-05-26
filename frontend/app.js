@@ -227,6 +227,7 @@ function renderCard(p, rank = null) {
     <div class="actions">
       ${visitBtn}
       ${wishBtn}
+      <button class="details-btn" data-id="${p.id}" data-action="details">Details</button>
       <button data-id="${p.id}" data-action="map">Map</button>
       ${deleteBtn}
     </div>
@@ -288,6 +289,10 @@ async function handleAction(e, place) {
     saveSet(LS_WISHLIST, state.wishlistIds);
     document.getElementById("wishlistCount").textContent = state.wishlistIds.size;
     refreshCurrentView();
+  }
+
+  if (action === "details") {
+    openDetailsModal(place);
   }
 
   if (action === "map") {
@@ -955,6 +960,105 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
   } catch (err) {
     status.className = "status error";
     status.textContent = "Error: " + err.message;
+  }
+});
+
+// ---------- Details modal ----------
+async function openDetailsModal(place) {
+  const modal = document.getElementById("detailsModal");
+  const body = document.getElementById("modalBody");
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+
+  const img = place.thumb_url || place.image_url;
+  const photoHtml = img
+    ? `<div class="modal-photo" style="background-image:url('${img}')"></div>`
+    : `<div class="modal-photo placeholder"></div>`;
+  const tags = (place.type || []).map(t => `<span class="tag">${t}</span>`).join("");
+
+  body.innerHTML = `
+    ${photoHtml}
+    <div class="modal-head">
+      <h2>${place.name}</h2>
+      <div class="modal-sub">
+        <span class="tag region">${place.region}</span>
+        ${place.state}${place.city && place.city !== place.state ? ' · ' + place.city : ''}
+      </div>
+      <div class="tags">${tags}</div>
+      <p class="modal-desc">${place.description || ""}</p>
+    </div>
+    <div id="modalDetails" class="loader">Generating travel tips (about 5–15s)…</div>
+  `;
+
+  try {
+    const r = await fetch(`/api/details/${place.id}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    renderDetailsContent(d, place);
+  } catch (e) {
+    document.getElementById("modalDetails").innerHTML =
+      `<div class="empty">Couldn't generate details right now. ${e.message}</div>`;
+  }
+}
+
+function renderDetailsContent(d, place) {
+  const el = document.getElementById("modalDetails");
+  el.classList.remove("loader");
+
+  const list = (arr) =>
+    (arr || []).map(x => `<li>${x}</li>`).join("");
+
+  el.innerHTML = `
+    <div class="detail-grid">
+      <section class="detail-section facts">
+        <h3>✦ Interesting facts</h3>
+        <ul>${list(d.interesting_facts)}</ul>
+      </section>
+
+      <section class="detail-section must-do">
+        <h3>★ Must-do experiences</h3>
+        <ul>${list(d.must_do)}</ul>
+      </section>
+
+      <section class="detail-section dos">
+        <h3>✓ Do</h3>
+        <ul>${list(d.do_tips)}</ul>
+      </section>
+
+      <section class="detail-section donts">
+        <h3>✗ Don't</h3>
+        <ul>${list(d.dont_tips)}</ul>
+      </section>
+
+      <section class="detail-section food">
+        <h3>🍴 Local food</h3>
+        <ul>${list(d.local_food)}</ul>
+      </section>
+
+      <section class="detail-section info">
+        <h3>📍 Practical info</h3>
+        <p><b>Best time of day:</b> ${d.best_time_of_day || "—"}</p>
+        <p><b>Getting there:</b> ${d.getting_there || "—"}</p>
+        <p><b>Daily budget:</b> ${d.approx_budget_inr || "—"}</p>
+      </section>
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}','_blank')">Open in Google Maps</button>
+    </div>
+  `;
+}
+
+function closeDetailsModal() {
+  document.getElementById("detailsModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+document.getElementById("modalCloseBtn").addEventListener("click", closeDetailsModal);
+document.querySelector("#detailsModal .modal-backdrop").addEventListener("click", closeDetailsModal);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("detailsModal").classList.contains("hidden")) {
+    closeDetailsModal();
   }
 });
 
