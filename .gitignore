@@ -1,0 +1,7 @@
+.env
+data/user.db
+restore_state.txt
+__pycache__/
+*.pyc
+.venv/
+

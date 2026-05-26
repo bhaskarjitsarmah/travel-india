@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>India Tourism Recommender</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="" />
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>India Tourism Recommender</h1>
+    <p class="tagline">Find the next place to visit, ranked for right now.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><span id="visitedCount">0</span> visited</div>
+    <div class="stat"><span id="wishlistCount">0</span> wishlist</div>
+    <div class="stat"><span id="totalCount">0</span> total</div>
+    <div class="stat" id="weatherBadge">weather: off</div>
+    <div class="stat" id="monthBadge">—</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="search">Ask</button>
+  <button class="tab" data-tab="recommend">Recommend</button>
+  <button class="tab" data-tab="plan">Plan Trip</button>
+  <button class="tab" data-tab="browse">Browse</button>
+  <button class="tab" data-tab="visited">Visited & Wishlist</button>
+  <button class="tab" data-tab="map">Map</button>
+  <button class="tab" data-tab="festivals">Festivals</button>
+  <button class="tab" data-tab="stats">Stats</button>
+  <button class="tab" data-tab="add">Add</button>
+</nav>
+
+<section id="search" class="view active">
+  <div class="ask-hero">
+    <h2>Ask in plain English</h2>
+    <p class="muted">e.g. "scenic places in north India with high accessibility for July" · "offbeat beach for winter" · "tiger safari in November"</p>
+    <div class="ask-row">
+      <input type="text" id="askInput" placeholder="Describe what you're looking for…"
+             autocomplete="off" />
+      <label class="check ask-check">
+        <input type="checkbox" id="askWeather" /> Use live weather
+      </label>
+      <button id="askBtn" class="primary">Search</button>
+    </div>
+    <div class="ask-examples">
+      <button class="example-chip" data-q="Show me the most scenic places in north India with high accessibility that we can travel in July">Scenic + accessible + July (your example)</button>
+      <button class="example-chip" data-q="Offbeat hill stations in Himachal away from crowds">Offbeat hills, Himachal</button>
+      <button class="example-chip" data-q="Best beaches for winter holiday with family">Family beaches, winter</button>
+      <button class="example-chip" data-q="Wildlife safaris with tiger sightings in central India">Tiger safaris, Central</button>
+      <button class="example-chip" data-q="Spiritual pilgrimage places in north India">Pilgrimages, North</button>
+      <button class="example-chip" data-q="Adventure trekking and paragliding spots in the Himalayas">Adventure + Himalayas</button>
+    </div>
+    <div id="filterChips" class="filter-chips"></div>
+    <div id="askError" class="status"></div>
+  </div>
+  <div id="askLoader" class="loader hidden">Parsing your question…</div>
+  <div id="askGrid" class="grid"></div>
+</section>
+
+<section id="recommend" class="view">
+  <div class="controls">
+    <label>Month:
+      <select id="monthSelect"></select>
+    </label>
+    <label>Region:
+      <select id="regionSelect">
+        <option value="">All</option>
+        <option>North</option>
+        <option>South</option>
+        <option>East</option>
+        <option>West</option>
+        <option>Central</option>
+        <option>Northeast</option>
+        <option>Islands</option>
+      </select>
+    </label>
+    <label>Type:
+      <select id="typeSelect">
+        <option value="">All</option>
+        <option>hills</option>
+        <option>beach</option>
+        <option>heritage</option>
+        <option>spiritual</option>
+        <option>wildlife</option>
+        <option>nature</option>
+        <option>adventure</option>
+        <option>city</option>
+        <option>lake</option>
+        <option>desert</option>
+        <option>island</option>
+      </select>
+    </label>
+    <label>Top N:
+      <input type="number" id="topN" value="10" min="1" max="30" />
+    </label>
+    <label class="check">
+      <input type="checkbox" id="useWeather" checked /> Live weather
+    </label>
+    <button id="refreshBtn" class="primary">Recommend</button>
+  </div>
+  <div id="loader" class="loader hidden">Ranking places…</div>
+  <div id="recommendGrid" class="grid"></div>
+</section>
+
+<section id="browse" class="view">
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search by name, state, type…" />
+    <select id="browseRegion">
+      <option value="">All regions</option>
+      <option>North</option><option>South</option><option>East</option>
+      <option>West</option><option>Central</option><option>Northeast</option>
+      <option>Islands</option>
+    </select>
+    <select id="browseVisited">
+      <option value="all">All</option>
+      <option value="unvisited">Unvisited</option>
+      <option value="visited">Visited</option>
+    </select>
+  </div>
+  <div id="browseGrid" class="grid"></div>
+</section>
+
+<section id="visited" class="view">
+  <div class="controls">
+    <select id="visitedFilter">
+      <option value="all">All saved (visited + wishlist)</option>
+      <option value="visited">Visited only</option>
+      <option value="wishlist">Wishlist only</option>
+    </select>
+  </div>
+  <div id="visitedGrid" class="grid"></div>
+  <div id="visitedEmpty" class="empty hidden">
+    Nothing here yet. Mark places visited or wishlist them from any other tab.
+  </div>
+</section>
+
+<section id="plan" class="view">
+  <div class="ask-hero">
+    <h2>Plan a trip with AI</h2>
+    <p class="muted">Pick a starting city, number of days, and let the planner cluster places into a day-by-day itinerary.</p>
+    <form id="planForm" class="plan-form">
+      <div class="row">
+        <label>Starting city
+          <select id="planCity">
+            <option data-lat="28.6139" data-lon="77.2090" value="Delhi">Delhi</option>
+            <option data-lat="19.0760" data-lon="72.8777" value="Mumbai">Mumbai</option>
+            <option data-lat="12.9716" data-lon="77.5946" value="Bangalore">Bangalore</option>
+            <option data-lat="13.0827" data-lon="80.2707" value="Chennai">Chennai</option>
+            <option data-lat="17.3850" data-lon="78.4867" value="Hyderabad">Hyderabad</option>
+            <option data-lat="22.5726" data-lon="88.3639" value="Kolkata">Kolkata</option>
+            <option data-lat="26.9124" data-lon="75.7873" value="Jaipur">Jaipur</option>
+            <option data-lat="23.0225" data-lon="72.5714" value="Ahmedabad">Ahmedabad</option>
+            <option data-lat="18.5204" data-lon="73.8567" value="Pune">Pune</option>
+            <option data-lat="9.9312" data-lon="76.2673" value="Kochi">Kochi</option>
+          </select>
+        </label>
+        <label>Days
+          <input type="number" id="planDays" min="2" max="21" value="7" />
+        </label>
+        <label>Travel month
+          <select id="planMonth"></select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Interests (optional, comma-separated)
+          <input type="text" id="planInterests" placeholder="heritage, hills, food, wildlife…" />
+        </label>
+      </div>
+      <div class="row plan-checks">
+        <label class="check"><input type="checkbox" id="planOnlyWishlist" /> Use only my wishlist</label>
+        <label class="check"><input type="checkbox" id="planExcludeVisited" checked /> Exclude places I've visited</label>
+      </div>
+      <button type="submit" class="primary">Build itinerary</button>
+    </form>
+  </div>
+  <div id="planLoader" class="loader hidden">Planning your trip (this can take 15–30s)…</div>
+  <div id="planResult"></div>
+</section>
+
+<section id="festivals" class="view">
+  <div class="controls">
+    <label>Show month:
+      <select id="festMonth">
+        <option value="0">All months</option>
+      </select>
+    </label>
+    <span class="muted" id="festSubtitle">Major festivals across India, mapped to the places that host them.</span>
+  </div>
+  <div id="festivalList" class="festival-list"></div>
+</section>
+
+<section id="stats" class="view">
+  <div id="statsContent" class="stats-grid"></div>
+</section>
+
+<section id="map" class="view">
+  <div class="map-controls">
+    <div class="map-legend">
+      <span class="legend-dot visited"></span> Visited (<span id="mapVisitedCount">0</span>)
+      <span class="legend-dot wishlist"></span> Wishlist
+      <label class="check map-toggle">
+        <input type="checkbox" id="showUnvisited" />
+        <span class="legend-dot unvisited"></span> Show others (<span id="mapUnvisitedCount">0</span>)
+      </label>
+    </div>
+    <button id="fitAllBtn">Fit all</button>
+  </div>
+  <div id="mapContainer"></div>
+</section>
+
+<section id="add" class="view">
+  <form id="addForm" class="add-form">
+    <h2>Add a custom place</h2>
+    <div class="row">
+      <label>Name<input name="name" required /></label>
+      <label>State<input name="state" required /></label>
+    </div>
+    <div class="row">
+      <label>Region
+        <select name="region" required>
+          <option>North</option><option>South</option><option>East</option>
+          <option>West</option><option>Central</option><option>Northeast</option>
+          <option>Islands</option>
+        </select>
+      </label>
+      <label>City<input name="city" /></label>
+    </div>
+    <div class="row">
+      <label>Latitude<input type="number" step="any" name="lat" required /></label>
+      <label>Longitude<input type="number" step="any" name="lon" required /></label>
+    </div>
+    <div class="row">
+      <label>Types (comma-separated)<input name="type" placeholder="hills, nature" /></label>
+      <label>Best months (comma-separated 1-12)<input name="best_months" placeholder="10,11,12,1,2" /></label>
+    </div>
+    <div class="row">
+      <label>Ideal temp min °C<input type="number" name="ideal_temp_min" /></label>
+      <label>Ideal temp max °C<input type="number" name="ideal_temp_max" /></label>
+    </div>
+    <div class="row">
+      <label>Accessibility (1-5)<input type="number" name="accessibility" min="1" max="5" value="3" /></label>
+      <label>Must-see (1-5)<input type="number" name="must_see_score" min="1" max="5" value="3" /></label>
+      <label>Duration (days)<input type="number" name="duration_days" min="1" value="2" /></label>
+    </div>
+    <label>Description<textarea name="description" rows="3"></textarea></label>
+    <button type="submit" class="primary">Add place</button>
+    <p id="addStatus" class="status"></p>
+  </form>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
